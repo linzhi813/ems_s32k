@@ -1,0 +1,32 @@
+// J-Link Commander script for flashing EMS S32K firmware
+//
+// Usage:
+//   JLinkExe -device S32K344 -if SWD -speed 4000 -CommanderScript tools/flash.jlink
+//
+// Or from CMake:
+//   cmake --build build --target flash
+
+device S32K344
+if SWD
+speed 4000
+
+// Connect to target
+connect
+
+// Halt the CPU
+halt
+
+// Erase flash sectors occupied by application
+erase 0x00400000 0x004FFFFF
+
+// Program firmware
+loadbin build/ems_s32k.bin 0x00400000
+
+// Verify
+verifybin build/ems_s32k.bin 0x00400000
+
+// Reset and run
+reset
+go
+
+exit
