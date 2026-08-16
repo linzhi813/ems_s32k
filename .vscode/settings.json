@@ -1,0 +1,6 @@
+{
+    "cmake.sourceDirectory": "C:/Users/Colin/Documents/ems_s32k/tools",
+    "cmake.useCMakePresets": "always",
+    "cmake.cmakePath": "C:/Program Files/CMake/bin/cmake.exe",
+    "cmake.buildDirectory": "C:/Users/Colin/Documents/ems_s32k/build"
+}

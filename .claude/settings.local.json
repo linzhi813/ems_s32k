@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/SEGGER/JLink/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/SEGGER/JLink/**)",
+      "Bash(env)",
+      "WebSearch"
+    ]
+  }
+}

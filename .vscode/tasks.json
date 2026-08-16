@@ -1,0 +1,121 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "${command:cmake.buildDirectory}",
+                "-S", "tools",
+                "-DCMAKE_TOOLCHAIN_FILE=../tools/cmake/toolchain-arm-none-eabi.cmake",
+                "-DCMAKE_MAKE_PROGRAM=C:/msys64/usr/bin/make.exe",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-G", "Unix Makefiles"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Configure project with ARM cross-compilation toolchain"
+        },
+        {
+            "label": "CMake: Configure (Release)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "-B", "${command:cmake.buildDirectory}",
+                "-S", "tools",
+                "-DCMAKE_TOOLCHAIN_FILE=../tools/cmake/toolchain-arm-none-eabi.cmake",
+                "-DCMAKE_MAKE_PROGRAM=C:/msys64/usr/bin/make.exe",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-G", "Unix Makefiles"
+            ],
+            "problemMatcher": [],
+            "detail": "Configure project for release (optimized) build"
+        },
+        {
+            "label": "CMake: Build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${command:cmake.buildDirectory}"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn": ["CMake: Configure"],
+            "detail": "Build firmware"
+        },
+        {
+            "label": "CMake: Clean",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${command:cmake.buildDirectory}",
+                "--target", "clean"
+            ],
+            "problemMatcher": [],
+            "detail": "Clean build artifacts"
+        },
+        {
+            "label": "CMake: Rebuild",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${command:cmake.buildDirectory}",
+                "--clean-first"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOn": ["CMake: Configure"],
+            "detail": "Clean rebuild firmware"
+        },
+        {
+            "label": "Flash via J-Link",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${command:cmake.buildDirectory}",
+                "--target", "flash"
+            ],
+            "problemMatcher": [],
+            "dependsOn": ["CMake: Build"],
+            "detail": "Flash firmware to S32K344 via J-Link"
+        },
+        {
+            "label": "Size",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${command:cmake.buildDirectory}",
+                "--target", "size"
+            ],
+            "problemMatcher": [],
+            "dependsOn": ["CMake: Build"],
+            "detail": "Print memory usage"
+        },
+        {
+            "label": "Disassembly",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build", "${command:cmake.buildDirectory}",
+                "--target", "disasm"
+            ],
+            "problemMatcher": [],
+            "dependsOn": ["CMake: Build"],
+            "detail": "Generate disassembly listing"
+        }
+    ]
+}

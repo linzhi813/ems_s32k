@@ -1,0 +1,65 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "S32K344 Debug (J-Link)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "jlink",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:cmake.buildDirectory}/ems_s32k.elf",
+            "device": "S32K344",
+            "interface": "swd",
+            "serialNumber": "",
+            "svdFile": "${workspaceFolder}/config/S32K344.svd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build",
+            "postLaunchCommands": [
+                "monitor semihosting enable",
+                "monitor semihosting IOclient 3"
+            ],
+            "preRestartCommands": [],
+            "armToolchainPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin",
+            "serverpath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+            "showDevDebugOutput": "raw",
+            "rttConfig": {
+                "enabled": false,
+                "address": "auto",
+                "decoders": [
+                    {
+                        "port": 0,
+                        "type": "console"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "S32K344 Attach (J-Link)",
+            "type": "cortex-debug",
+            "request": "attach",
+            "servertype": "jlink",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:cmake.buildDirectory}/ems_s32k.elf",
+            "device": "S32K344",
+            "interface": "swd",
+            "svdFile": "${workspaceFolder}/config/S32K344.svd",
+            "armToolchainPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin",
+            "serverpath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe"
+        },
+        {
+            "name": "S32K344 Debug (OpenOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${command:cmake.buildDirectory}/ems_s32k.elf",
+            "configFiles": [
+                "interface/jlink.cfg",
+                "target/s32k344.cfg"
+            ],
+            "svdFile": "${workspaceFolder}/config/S32K344.svd",
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build"
+        }
+    ]
+}

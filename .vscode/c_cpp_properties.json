@@ -1,0 +1,44 @@
+{
+    "configurations": [
+        {
+            "name": "S32K344 (ARM GCC)",
+            "compilerPath": "C:/Program Files (x86)/GNU Arm Embedded Toolchain/10 2020-q4-major/bin/arm-none-eabi-gcc.exe",
+            "compilerArgs": [
+                "-mcpu=cortex-m7",
+                "-mthumb",
+                "-mfpu=fpv5-sp-d16",
+                "-mfloat-abi=hard"
+            ],
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "gcc-arm",
+            "includePath": [
+                "${workspaceFolder}/bsw/mcal/mcu",
+                "${workspaceFolder}/lib",
+                "${workspaceFolder}/config",
+                "${workspaceFolder}/bsw/cdd",
+                "${workspaceFolder}/bsw/hal/can_tp",
+                "${workspaceFolder}/bsw/hal/io_hw_ab",
+                "${workspaceFolder}/bsw/hal/nvm",
+                "${workspaceFolder}/bsw/services/com",
+                "${workspaceFolder}/bsw/services/os",
+                "${workspaceFolder}/app/control",
+                "${workspaceFolder}/app/FaultManager",
+                "${workspaceFolder}/app/vios"
+            ],
+            "defines": [
+                "S32K344",
+                "CORE_CM7",
+                "__GNUC__"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "configurationProvider": "ms-vscode.cmake-tools"
+        }
+    ],
+    "version": 4
+}
