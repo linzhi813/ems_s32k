@@ -6,8 +6,10 @@
 // Or from CMake:
 //   cmake --build build --target flash
 
+// ── 脚本内路径相对于项目根目录（由 CMake 的 WORKING_DIRECTORY 保证，
+//    手动运行也从项目根目录执行）──
 device S32K344
-if SWD
+si SWD
 speed 4000
 
 // Connect to target
@@ -16,7 +18,7 @@ connect
 // Halt the CPU
 halt
 
-// Erase flash sectors occupied by application
+// Erase flash sectors occupied by application (first 1MB of P-Flash)
 erase 0x00400000 0x004FFFFF
 
 // Program firmware
@@ -26,7 +28,7 @@ loadbin build/ems_s32k.bin 0x00400000
 verifybin build/ems_s32k.bin 0x00400000
 
 // Reset and run
-reset
-go
+r
+g
 
-exit
+qc

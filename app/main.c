@@ -11,6 +11,7 @@
  */
 
 #include "mcu.h"
+#include <stdio.h>
 
 /* ── Cortex-M7 SysTick register definitions ── */
 #define SYST_CSR        (*(volatile uint32_t *)0xE000E010u)
@@ -53,10 +54,10 @@ int main(void)
     (void)sys_clk;  /* Available for debugger inspection */
 
     /* ── Configure SysTick for 10 ms interval ──
-     * CORE_CLK = 160 MHz → 10 ms = 1,600,000 cycles
-     * Reload = 1,600,000 - 1 = 1,599,999
+     * Reload = (CORE_CLK / 100) - 1
+     * CORE_CLK is FIRC 48 MHz until MCU driver switches to PLL.
      */
-    SYST_RVR = 1599999u;
+    SYST_RVR = Mcu_GetCoreClockHz() / 100u - 1u;
     SYST_CVR = 0u;
     SYST_CSR = SYST_CSR_ENABLE | SYST_CSR_TICKINT | SYST_CSR_CLKSOURCE;
 
@@ -80,6 +81,14 @@ int main(void)
         if (g_flag_10ms) {
             g_flag_10ms = 0u;
             g_counter_10ms++;
+            printf("tick: %lu\n", (unsigned long)g_counter_10ms);
         }
+
+        /* Idle until the next interrupt (low-power).  The 10 ms
+         * SysTick wakes the core; busy-waiting instead would spin
+         * the whole loop within a single source line, which makes
+         * GDB "step" never complete (it steps until the line
+         * number changes). */
+        Mcu_WaitForInterrupt();
     }
 }

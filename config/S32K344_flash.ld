@@ -48,13 +48,15 @@ SECTIONS
     /**************************************************************************
      * ARM Vector Table
      *
-     * Must be aligned to power-of-two boundary matching total vector count.
-     * For up to 272 vectors (16 system + 256 IRQ), align to 0x400 (1KB).
-     * Placed immediately after IVT at 0x00400100.
+     * VTOR alignment requirement (Cortex-M7):
+     *   alignment ≥ number of vectors × 4, rounded up to power of 2
+     *   272 vectors × 4 B = 1088 B → next power of 2 = 2048 (0x800)
+     * Official NXP linker (linker_flash_s32k344.ld) uses ALIGN(2048)
+     * after the boot header.
      **************************************************************************/
     .vectors :
     {
-        . = ALIGN(0x400);
+        . = ALIGN(0x800);
         __vector_start__ = .;
         KEEP(*(.vectors))
         __vector_end__ = .;

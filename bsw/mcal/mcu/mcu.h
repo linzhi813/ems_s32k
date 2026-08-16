@@ -19,42 +19,50 @@ extern "C" {
 
 /* ─────────────────────────────────────────────────────────────
  * S32K344 memory map (key peripheral base addresses)
+ *
+ * Verified against S32K3xxRM Rev.5 memory map chapters:
+ *   MSCM    0x40260000 (ch.7)      MC_RGM  0x4028C000
+ *   SWT_0   0x40270000 (ch.65)     SIUL2   0x40290000
+ *   STM_0   0x40274000             WKPU    0x402B4000 (ch.47)
+ *   MC_ME   0x402DC000 (ch.45)     MC_CGM  0x402D8000
+ *   PLL     0x402E0000 (ch.29)     eMIOS_0 0x40088000 (ch.62)
  * ───────────────────────────────────────────────────────────── */
-
-/* AIPS-Lite peripheral slots */
-#define AIPS0_BASE               0x40000000u
-#define AIPS1_BASE               0x40200000u
-
-/* SIUL2 (pin mux / GPIO) */
-#define SIUL2_BASE               0x402D0000u
-
-/* WKPU (wakeup unit) */
-#define WKPU_BASE                0x402B0000u
 
 /* MSCM (misc system control module) */
-#define MSCM_BASE                0x40290000u
+#define MSCM_BASE                0x40260000u
 
-/* MC_CGM (clock generation module) */
-#define MC_CGM_BASE              0x40274000u
+/* SWT_0 (internal software watchdog 0) */
+#define SWT0_BASE                0x40270000u
+
+/* STM_0 (system timer module 0) */
+#define STM0_BASE                0x40274000u
+
+/* MC_RGM (reset generation module) */
+#define MC_RGM_BASE              0x4028C000u
+
+/* SIUL2 (pin mux / GPIO) */
+#define SIUL2_BASE               0x40290000u
+
+/* WKPU (wakeup unit) */
+#define WKPU_BASE                0x402B4000u
 
 /* MC_ME (mode entry module) */
-#define MC_ME_BASE               0x40270000u
+#define MC_ME_BASE               0x402DC000u
+
+/* MC_CGM (clock generation module) */
+#define MC_CGM_BASE              0x402D8000u
 
 /* PLL */
-#define PLL_BASE                 0x4027C000u
+#define PLL_BASE                 0x402E0000u
 
-/* WDOG / SWT */
-#define SWT0_BASE                0x402A0000u
-
-/* STM */
-#define STM0_BASE                0x402D8000u
+/* eMIOS_0 */
+#define EMIOS0_BASE              0x40088000u
 
 /* ─────────────────────────────────────────────────────────────
- * Clock frequencies (after system clock init)
+ * Clock frequencies
  * ───────────────────────────────────────────────────────────── */
 
-#define SYS_CLK_FREQ_HZ          160000000u  /* CORE_CLK / AIPS_PLAT_CLK */
-#define FIRC_FREQ_HZ             48000000u   /* Fast Internal RC */
+#define FIRC_FREQ_HZ             48000000u   /* Fast Internal RC (boot default) */
 #define SIRC_FREQ_HZ             32000u      /* Slow Internal RC */
 
 /* ─────────────────────────────────────────────────────────────
@@ -91,6 +99,17 @@ void Mcu_DelayUs(uint32_t us);
  * @brief  Trigger a system reset
  */
 void Mcu_Reset(void) __attribute__((noreturn));
+
+/**
+ * @brief  Wait for interrupt — low-power idle
+ *
+ * Executes WFI: the core sleeps until the next interrupt.
+ * Use in the main idle loop instead of busy-wait polling.
+ */
+static inline void Mcu_WaitForInterrupt(void)
+{
+    __asm__ volatile ("wfi");
+}
 
 #ifdef __cplusplus
 }

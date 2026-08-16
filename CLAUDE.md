@@ -65,24 +65,20 @@ The project is at **v0.1.0** — startup code, build system, and embedded C libr
 
 ## Build
 
+Use CMake presets (defined in `tools/CMakePresets.json`) — this is the path VS Code CMake Tools uses:
+
 ```bash
-# Configure (from project root)
-cmake -S tools -B build -DCMAKE_TOOLCHAIN_FILE=../tools/cmake/toolchain-arm-none-eabi.cmake -G "Unix Makefiles"
+# Configure + build Debug (from tools/ — preset file location)
+cd tools && cmake --preset arm-debug && cmake --build --preset arm-debug
 
-# Build (Debug, default)
-cmake --build build
+# Release
+cd tools && cmake --preset arm-release && cmake --build --preset arm-release
 
-# Release build
-cmake -S tools -B build -DCMAKE_TOOLCHAIN_FILE=../tools/cmake/toolchain-arm-none-eabi.cmake -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-
-# Flash via J-Link
+# Flash via J-Link (from project root; script paths are root-relative)
 cmake --build build --target flash
 
-# Memory usage
+# Memory usage / disassembly
 cmake --build build --target size
-
-# Disassembly listing
 cmake --build build --target disasm
 ```
 
@@ -94,6 +90,13 @@ Build outputs in `build/`: `ems_s32k.elf`, `.bin`, `.hex`, `.map`
 -DUSE_SEMIHOSTING=ON   # Route printf/scanf through ARM semihosting (debugger console)
 -DBUILD_TESTS=ON        # Build tests (future)
 ```
+
+### Debug (VS Code, verified working)
+
+- Press **F5** with "S32K344 Debug (J-Link)" configuration
+- Requires Cortex-Debug extension + J-Link probe connected via SWD
+- `serverpath` in launch.json points to `C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe` (Cortex-Debug does NOT use `jlinkPath` to find the GDB server)
+- SVD file at `config/S32K344.svd` enables the Peripherals register view
 
 ## Architecture
 
@@ -176,13 +179,20 @@ TLE7368E PMIC provides: VCC5V (MCU), VCC1.5V (VDD_HV), VCC1.1V (core). Two NCV31
 
 ## Implementation Status & Roadmap
 
-- [x] 1. Startup code + clock tree (`bsw/mcal/mcu/startup_s32k344.S`, `system_S32K344.c`)
-- [x] 2. CMake toolchain + linker script (`tools/CMakeLists.txt`, `tools/cmake/`, `config/S32K344_flash.ld`)
+- [x] 1. Startup code + clock tree (`bsw/mcal/mcu/startup_s32k344.S`, `system_S32K344.c`) — **verified on hardware** (IVT boot via SBAF, SWT0 disabled, TCM enabled, SRAM ECC init, FIRC 48MHz)
+- [x] 2. CMake toolchain + linker script (`tools/CMakeLists.txt`, `tools/cmake/`, `tools/CMakePresets.json`, `config/S32K344_flash.ld`)
 - [x] 3. Embedded C library (`lib/syscalls.c`, `lib/semihosting.c`)
-- [x] 4. VS Code debug environment (`.vscode/launch.json`, `tasks.json`)
-- [ ] 5. Integrate NXP S32K3 RTD into `lib/`
+- [x] 4. VS Code debug environment (`.vscode/launch.json`, `tasks.json`) — **verified working** with J-Link SWD
+- [ ] 5. Integrate NXP S32K3 RTD into `lib/` (RTD installed at `C:/NXP/S32DS.3.6.1/S32DS/software/PlatformSDK_S32K3/RTD/`)
 - [ ] 6. MCAL drivers: Dio → Spi → Adc → Gpt → Pwm → Can → Fls → Wdg
 - [ ] 7. HAL: IoHwAb, CanTp, NvM
 - [ ] 8. CDD: PT2000 injection driver (SPI-based, most complex)
 - [ ] 9. Services: OS, COM stack
 - [ ] 10. APP: vios → control → FaultManager
+
+### Verified Hardware Details
+
+- IVT must place CM7_0 start address (vector table, VTOR-aligned 2048) at offset 0x0C — SBAF reads it there
+- MSCM IRSPRC is a **16-bit** array (offset 0x880, 240 entries) — 32-bit access causes bus fault
+- SWT0 unlock sequence: 0xC520/0xD928 to service reg (0x40270010), then CR = 0xFF000040
+- J-Link flash workflow: `cmake --build build --target flash` (erase → loadbin → verify → reset → go)

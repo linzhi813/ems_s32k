@@ -2,16 +2,9 @@
  * @file    syscalls.h
  * @brief   newlib-nano system call stubs — public interface
  *
- * Provides declarations for all retargeted system calls needed by
- * newlib / newlib-nano on bare-metal ARM Cortex-M targets.
- *
- * To use printf/scanf/malloc on bare-metal, implement or stub these
- * functions.  The default implementations in syscalls.c provide:
- *   - _write()  → semihosting or UART (user-selectable)
- *   - _read()   → semihosting or UART
- *   - _sbrk()   → heap management backed by linker symbols
- *   - _exit()   → trap processor
- *   - all other file/process stubs → return -1 / ENOSYS
+ * Provides declarations for the minimal syscall set required by
+ * printf/scanf on bare-metal ARM Cortex-M targets:
+ *   _write, _read, _sbrk, _isatty, _fstat
  *
  * Compiler flags:
  *   -DUSE_SEMIHOSTING   → route _write/_read through ARM semihosting
@@ -65,16 +58,10 @@ int _read(int fd, void *buf, size_t nbyte);
 void *_sbrk(ptrdiff_t incr);
 
 /**
- * @brief  Open a file (stub — no filesystem on bare-metal)
- * @return -1 with errno = ENOSYS
+ * @brief  Check if fd is a terminal
+ * @return 1 if fd is stdin/stdout/stderr, 0 otherwise
  */
-int _open(const char *path, int oflag, ...);
-
-/**
- * @brief  Close a file descriptor (stub)
- * @return -1 with errno = ENOSYS
- */
-int _close(int fd);
+int _isatty(int fd);
 
 /**
  * @brief  Get file status
@@ -83,38 +70,16 @@ int _close(int fd);
 int _fstat(int fd, struct stat *st);
 
 /**
- * @brief  Check if fd is a terminal
- * @return 1 if fd is stdin/stdout/stderr, 0 otherwise
+ * @brief  Close a file descriptor (stub — required by __sinit)
+ * @return -1 with errno = EBADF
  */
-int _isatty(int fd);
+int _close(int fd);
 
 /**
- * @brief  Seek within a file (stub)
- * @return -1 with errno = ENOSYS
+ * @brief  Reposition the file offset (stub — required by __sinit)
+ * @return -1 with errno = EBADF
  */
 int _lseek(int fd, off_t offset, int whence);
-
-/**
- * @brief  Terminate the program (traps processor)
- */
-void _exit(int status) __attribute__((noreturn));
-
-/**
- * @brief  Send a signal to a process (stub)
- * @return -1 with errno = EINVAL
- */
-int _kill(int pid, int sig);
-
-/**
- * @brief  Get current process ID
- * @return 1 (bare-metal single-process)
- */
-int _getpid(void);
-
-/* ─────────────────────────────────────────────────────────────
- * environ — required by some newlib builds to avoid linker errors
- * ───────────────────────────────────────────────────────────── */
-extern char **environ;
 
 #ifdef __cplusplus
 }

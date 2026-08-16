@@ -12,13 +12,16 @@
 
 #include "semihosting.h"
 
+#include <stddef.h>     /* NULL */
+
 /* ═══════════════════════════════════════════════════════════════
  *  sh_call — generic semihosting request
  *
- *  On Cortex-M7 (Thumb mode), semihosting uses:
- *      SVC 0xAB
- *      (preceded by a BKPT 0xAB on some older implementations —
- *       not needed on modern debuggers)
+ *  On M-profile (Cortex-M7, ARMv7-M), semihosting uses BKPT 0xAB
+ *  (per ARM IHI 0059).  With a debugger attached (J-Link GDB
+ *  Server), the BKPT is intercepted and serviced by the debugger.
+ *  Without a debugger, BKPT escalates to HardFault — semihosting
+ *  builds must always run under a debugger.
  *
  *  Register convention:
  *      r0 → operation type (SH_SYS_*)
@@ -34,7 +37,7 @@ int sh_call(uint32_t op, void *args)
     register int       ret __asm__ ("r0");
 
     __asm__ volatile (
-        "svc 0xAB\n"
+        "bkpt 0xAB\n"
         : "=r" (ret)
         : "r" (r0), "r" (r1)
         : "memory"
@@ -129,32 +132,4 @@ int sh_read(char *buf, int len)
 int sh_getc(void)
 {
     return sh_call(SH_SYS_READC, NULL);
-}
-
-
-/* ═══════════════════════════════════════════════════════════════
- *  sh_report_exception — notify debugger of exit
- *
- *  Uses SH_SYS_EXIT (0x18) with the ADP_Stopped_ApplicationExit
- *  reason code.  This tells the debugger the program has exited
- *  cleanly.
- *
- *  Parameter block (2 words):
- *      [0] = ADP_Stopped_ApplicationExit (0x20026)
- *      [1] = exit sub-code
- *
- *  This function does not return.
- * ═══════════════════════════════════════════════════════════════ */
-void sh_report_exception(int status)
-{
-    uint32_t block[2];
-    block[0] = 0x20026;         /* ADP_Stopped_ApplicationExit */
-    block[1] = (uint32_t)status;
-
-    sh_call(SH_SYS_EXIT, block);
-
-    /* Should never reach here */
-    while (1) {
-        __asm__ volatile ("wfi");
-    }
 }

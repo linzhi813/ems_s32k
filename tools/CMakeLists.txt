@@ -124,10 +124,12 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 #  Utility targets
 # ══════════════════════════════════════════════════════════════════
 
-# flash — program via J-Link
+# flash — program via J-Link (run from project root so the script's
+# relative path `build/ems_s32k.bin` resolves correctly)
 add_custom_target(flash
-    COMMAND JLinkExe -device S32K344 -if JTAG -speed 4000
+    COMMAND JLinkExe -device S32K344 -if SWD -speed 4000
         -CommanderScript ${ROOT_DIR}/tools/flash.jlink
+    WORKING_DIRECTORY ${ROOT_DIR}
     DEPENDS ${PROJECT_NAME}
     COMMENT "Flashing ${PROJECT_NAME}.bin to S32K344 via J-Link"
 )

@@ -1,0 +1,45 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 20,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "arm-debug",
+            "displayName": "S32K344 Debug (ARM GCC)",
+            "description": "Cross-compile for NXP S32K344 using arm-none-eabi-gcc",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/../build",
+            "cmakeExecutable": "C:/Program Files/CMake/bin/cmake.exe",
+            "toolchainFile": "cmake/toolchain-arm-none-eabi.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_MAKE_PROGRAM": "C:/msys64/usr/bin/make.exe",
+                "USE_SEMIHOSTING": "ON"
+            }
+        },
+        {
+            "name": "arm-release",
+            "displayName": "S32K344 Release (ARM GCC)",
+            "description": "Optimized build (-Os) for production",
+            "inherits": "arm-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "arm-debug",
+            "configurePreset": "arm-debug",
+            "jobs": 8
+        },
+        {
+            "name": "arm-release",
+            "configurePreset": "arm-release",
+            "jobs": 8
+        }
+    ]
+}

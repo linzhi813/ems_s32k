@@ -101,12 +101,6 @@ int sh_read(char *buf, int len);
  */
 int sh_getc(void);
 
-/**
- * @brief  Report an exception/exit status to the debugger.
- * @param status  Exit status code (e.g., ADP_Stopped_ApplicationExit = 0x20026)
- */
-void sh_report_exception(int status) __attribute__((noreturn));
-
 #ifdef __cplusplus
 }
 #endif

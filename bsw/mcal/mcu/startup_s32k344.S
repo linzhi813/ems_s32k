@@ -296,81 +296,43 @@
 /* ═══════════════════════════════════════════════════════════════
  * S32K3 Image Vector Table (IVT)
  *
- * The S32K3 boot ROM searches flash for a valid IVT header.
+ * The S32K3 boot ROM (SBAF) searches flash for a valid IVT header.
  * This MUST be the first 256 bytes of the flash image.
- * IVT magic: 0x5AA55AA5
+ *
+ * Layout verified against NXP official startup_cm7.s
+ * (.boot_header section) — S32K3_RTD_3_0_0:
+ *   00h  IVT marker          = 0x5AA55AA5
+ *   04h  Boot configuration  = CM7_0_ENABLE=1, non-secure boot
+ *   08h  Reserved
+ *   0Ch  CM7_0 start address = vector table (must honor VTOR
+ *        alignment — power of 2 ≥ table size)
+ *   10h  Reserved
+ *   14h  CM7_1 start address (not used, S32K344 single core)
+ *   18h  Reserved
+ *   1Ch  CM7_2 start address (not used)
+ *   20h  Reserved
+ *   24h  XRDC configuration pointer
+ *   28h  Lifecycle configuration pointer
+ *   2Ch.. Reserved (pad to 256 bytes)
  * ═══════════════════════════════════════════════════════════════ */
     .section .ivt_header, "a", %progbits
     .align  8
 
 IVT:
-    .word   0x5AA55AA5          /* IVT marker / header          */
-    .word   0x00000001          /* Boot configuration           */
-    .word   Reset_Handler       /* CM7_0 start address         */
-    .word   0x00000000          /* CM7_1 start (unused, S32K344 */
-    .word   0x00000000          /* CM7_2 start (unused)         */
-    .word   0x00000000          /* Lifecycle configuration      */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-    .word   0x00000000          /* Reserved                     */
-
-    /* Pad to exactly 256 bytes (64 words × 4 bytes) */
-    .fill   0x100 - (. - IVT), 1, 0x00
+    .word   0x5AA55AA5          /* 00h: IVT marker                     */
+    .word   0x00000001          /* 04h: Boot config — CM7_0_ENABLE=1,  */
+                                /*      BOOT_SEQ=0 (non-secure boot)   */
+    .word   0x00000000          /* 08h: Reserved                       */
+    .word   Vectors             /* 0Ch: CM7_0 start = vector table     */
+    .word   0x00000000          /* 10h: Reserved                       */
+    .word   0x00000000          /* 14h: CM7_1 start (not used)         */
+    .word   0x00000000          /* 18h: Reserved                       */
+    .word   0x00000000          /* 1Ch: CM7_2 start (not used)         */
+    .word   0x00000000          /* 20h: Reserved                       */
+    .word   0x00000000          /* 24h: XRDC configuration pointer     */
+    .word   0x00000000          /* 28h: Lifecycle configuration ptr    */
+    .word   0x00000000          /* 2Ch: Reserved                       */
+    .org    IVT + 0x100         /* 30h..: Reserved — pad to 256 bytes  */
 
 /* ═══════════════════════════════════════════════════════════════
  * ARM Cortex-M7 Vector Table
@@ -379,7 +341,9 @@ IVT:
  * 16 system exception vectors + 256 device IRQ slots.
  * ═══════════════════════════════════════════════════════════════ */
     .section .vectors, "a", %progbits
-    .align  10                  /* 2^10 = 1024-byte alignment */
+    .align  11                  /* 2^11 = 2048-byte alignment
+                                 * (272 vectors × 4 B = 1088 B table,
+                                 *  VTOR needs power-of-2 ≥ table) */
 
 Vectors:
     .word   __stack_top__       /* 0x000: Initial stack pointer     */
@@ -677,9 +641,105 @@ Vectors:
     .type   Reset_Handler, %function
     .align  2
 
+    /* Ensure Thumb bit set on symbol (Cortex-M7 executes Thumb
+     * only; official NXP code writes Reset_Handler+1 in the
+     * vector table for the same reason) */
+    .thumb_func
 Reset_Handler:
     /* ── Disable interrupts during initialization ── */
     cpsid   i
+
+    /* ═══════════════════════════════════════════════════════════
+     * MSCM clock enable via MC_ME
+     *
+     * Sequence verified against official NXP startup_cm7.s
+     * (S32K3_RTD_3_0_0).  MSCM must be clocked before any
+     * peripheral access — RTD critical sections read MSCM
+     * registers to determine the running core.
+     * ═══════════════════════════════════════════════════════════ */
+InitMSCMClock:
+    ldr     r0, =0x402DC310        /* MCME_PRTN1_COFB0_STAT      */
+    ldr     r1, [r0]
+    ldr     r2, =(1 << 24)         /* MCME_MSCM_REQ              */
+    ands    r1, r1, r2
+    bne     MSCMClockEnabled
+
+    ldr     r0, =0x402DC330        /* MCME_PRTN1_COFB0_CLKEN     */
+    ldr     r1, [r0]
+    orrs    r1, r1, r2
+    str     r1, [r0]
+
+    ldr     r0, =0x402DC304        /* MCME_PRTN1_PUPD            */
+    ldr     r1, [r0]
+    orrs    r1, r1, #1
+    str     r1, [r0]
+
+    ldr     r0, =0x402DC000        /* MCME_CTL_KEY               */
+    ldr     r1, =0x5AF0
+    str     r1, [r0]
+    ldr     r1, =0xA50F
+    str     r1, [r0]
+
+MSCMClockEnabled:
+    /* Wait for clock enable to take effect */
+    ldr     r0, =0x402DC310        /* MCME_PRTN1_COFB0_STAT      */
+    ldr     r2, =(1 << 24)
+WaitMSCMClock:
+    ldr     r1, [r0]
+    ands    r1, r1, r2
+    beq     WaitMSCMClock
+
+    /* ═══════════════════════════════════════════════════════════
+     * Disable SWT0 (internal watchdog 0)
+     *
+     * SWT_0 base 0x40270000.  Sequence from official startup:
+     *   1. Unlock service register (0x40270010): 0xC520, 0xD928
+     *   2. Write control register (0x40270000) = 0xFF000040
+     * ═══════════════════════════════════════════════════════════ */
+DisableSWT0:
+    ldr     r0, =0x40270010
+    ldr     r1, =0xC520
+    str     r1, [r0]
+    ldr     r1, =0xD928
+    str     r1, [r0]
+    ldr     r0, =0x40270000
+    ldr     r1, =0xFF000040
+    str     r1, [r0]
+
+    /* ═══════════════════════════════════════════════════════════
+     * Enable ITCM and DTCM (disable RETEN, set EN)
+     *   CM7_ITCMCR = 0xE000EF90, CM7_DTCMCR = 0xE000EF94
+     * ═══════════════════════════════════════════════════════════ */
+EnableTCM:
+    ldr     r1, =0xE000EF94        /* DTCMCR                    */
+    ldr     r0, [r1]
+    bic     r0, r0, #0x4           /* clear RETEN               */
+    orr     r0, r0, #0x1           /* set EN                    */
+    str     r0, [r1]
+    ldr     r1, =0xE000EF90        /* ITCMCR                    */
+    ldr     r0, [r1]
+    bic     r0, r0, #0x4
+    orr     r0, r0, #0x1
+    str     r0, [r1]
+
+    /* ═══════════════════════════════════════════════════════════
+     * SRAM ECC initialization
+     *
+     * S32K3 SRAM is ECC-protected: reading a location whose ECC
+     * has never been written faults.  Zero-fill the whole SRAM
+     * (256 KB) with 64-bit stores before any use — including
+     * the stack, which lives at the top of SRAM.
+     * ═══════════════════════════════════════════════════════════ */
+InitSRAMECC:
+    ldr     r1, =__sram_start__    /* 0x20400000                */
+    ldr     r2, =__sram_size__     /* 256 KB                    */
+    subs    r2, r2, #8
+SRAMLoop:
+    movs    r0, #0
+    movs    r3, #0
+    stm     r1!, {r0, r3}
+    subs    r2, r2, #8
+    bge     SRAMLoop
 
     /* ── Copy .data section from FLASH to SRAM ──
      *    Source:      __etext (in FLASH)

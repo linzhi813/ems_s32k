@@ -2,13 +2,14 @@
  * @file    syscalls.c
  * @brief   newlib-nano system call stubs for bare-metal S32K344
  *
- * Provides complete retargeting of the newlib C library for a
- * bare-metal ARM Cortex-M7 environment.  Supports:
+ * Provides the minimal syscall set required by printf/scanf
+ * on bare-metal ARM Cortex-M7:
  *
- *   - printf / puts / fprintf  via _write()
- *   - scanf / getchar          via _read()
- *   - malloc / free / calloc   via _sbrk()
- *   - All other POSIX stubs    return -1 / ENOSYS
+ *   - _write()   — printf / puts / fprintf output
+ *   - _read()    — scanf / getchar input
+ *   - _sbrk()    — heap for stdio internal buffering (malloc-based)
+ *   - _isatty()  — stdio buffering decision (terminal detection)
+ *   - _fstat()   — stream initialization (reports S_IFCHR)
  *
  * I/O routing (selectable via compile-time define):
  *   - USE_SEMIHOSTING  → ARM semihosting (debugger-connected I/O)
@@ -19,28 +20,15 @@
  *   _sbrk() uses linker symbols __heap_start__ and __heap_end__
  *   (defined in S32K344_flash.ld).  Stack collision detection
  *   via SP read prevents silent heap/stack corruption.
- *
- * References:
- *   - newlib/libc/sys/arm/syscalls.c (ARM reference implementation)
- *   - CMSIS-Compiler: System Calls OS Interface
  */
 
 #include "syscalls.h"
 
 #include <errno.h>
-#include <string.h>
 #include <unistd.h>
 
-/* ─────────────────────────────────────────────────────────────
- * environ — required to prevent "undefined reference" linker
- *           errors with certain newlib builds
- * ───────────────────────────────────────────────────────────── */
-char *__env[1] = { NULL };
-char **environ = __env;
-
-
 /* ═══════════════════════════════════════════════════════════════
- *  _sbrk — heap extension for malloc / free
+ *  _sbrk — heap extension for stdio buffers / malloc
  * ═══════════════════════════════════════════════════════════════ */
 
 /**
@@ -162,45 +150,8 @@ int _read(int fd, void *buf, size_t nbyte)
 
 
 /* ═══════════════════════════════════════════════════════════════
- *  File descriptor stubs — no filesystem on bare-metal
+ *  _isatty — terminal detection (stdio buffering decision)
  * ═══════════════════════════════════════════════════════════════ */
-
-/**
- * @brief  Open a file (not supported — no filesystem).
- */
-int _open(const char *path, int oflag, ...)
-{
-    (void)path;
-    (void)oflag;
-    errno = ENOSYS;
-    return -1;
-}
-
-/**
- * @brief  Close a file descriptor (stub).
- */
-int _close(int fd)
-{
-    (void)fd;
-    errno = ENOSYS;
-    return -1;
-}
-
-/**
- * @brief  Get file status.
- *
- * Reports the descriptor as a character device so that printf
- * line-buffering behaves correctly.
- */
-int _fstat(int fd, struct stat *st)
-{
-    (void)fd;
-
-    /* Zero-initialize then set mode to character device */
-    memset(st, 0, sizeof(*st));
-    st->st_mode = S_IFCHR;
-    return 0;
-}
 
 /**
  * @brief  Check if file descriptor refers to a terminal.
@@ -220,8 +171,42 @@ int _isatty(int fd)
 
 
 /* ═══════════════════════════════════════════════════════════════
- *  Seek stub
+ *  _fstat — file status (stream initialization)
  * ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * @brief  Get file status.
+ *
+ * Reports the descriptor as a character device so that stdio
+ * initializes stdout/stdin correctly for printf/scanf.
+ */
+int _fstat(int fd, struct stat *st)
+{
+    (void)fd;
+    st->st_mode = S_IFCHR;
+    st->st_blksize = 0;
+    st->st_size = 0;
+    return 0;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+ *  _close / _lseek — stdio stream teardown/positioning stubs
+ *
+ *  Referenced by newlib's __sinit() (stream initialization) via
+ *  _close_r/_lseek_r, so they are required for printf to link —
+ *  even though bare-metal never opens real files.
+ * ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * @brief  Close a file descriptor (stub — no filesystem).
+ */
+int _close(int fd)
+{
+    (void)fd;
+    errno = EBADF;
+    return -1;
+}
 
 /**
  * @brief  Reposition the file offset (stub — no filesystem).
@@ -231,64 +216,6 @@ int _lseek(int fd, off_t offset, int whence)
     (void)fd;
     (void)offset;
     (void)whence;
-    errno = ENOSYS;
+    errno = EBADF;
     return -1;
-}
-
-
-/* ═══════════════════════════════════════════════════════════════
- *  Process control stubs — bare-metal has no OS process model
- * ═══════════════════════════════════════════════════════════════ */
-
-/**
- * @brief  Terminate the program.
- *
- * On bare-metal, there is no OS to return to.  We trap the
- * processor in a low-power infinite loop.  If a debugger is
- * attached, a BKPT instruction can be placed before the loop.
- */
-void _exit(int status)
-{
-    (void)status;
-
-    /* If debugger is connected, break here for inspection */
-    #ifdef USE_SEMIHOSTING
-    sh_report_exception(status);
-    #endif
-
-    /* Trap: disable interrupts and sleep forever */
-    __asm__ volatile (
-        "cpsid i\n"
-        "loop_%=:\n"
-        "   wfi\n"
-        "   b   loop_%=\n"
-        : : : "memory"
-    );
-    __builtin_unreachable();
-}
-
-/* Prevent tail-call optimization from removing the _exit body */
-__attribute__((used))
-static void _exit_trampoline(void) { _exit(0); }
-
-
-/**
- * @brief  Send a signal to a process (stub — no OS).
- */
-int _kill(int pid, int sig)
-{
-    (void)pid;
-    (void)sig;
-    errno = EINVAL;
-    return -1;
-}
-
-/**
- * @brief  Get current process ID.
- *
- * Bare-metal is single-process — always return 1.
- */
-int _getpid(void)
-{
-    return 1;
 }
