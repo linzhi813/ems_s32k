@@ -31,6 +31,7 @@ cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH ROOT_DIR)
 # ── Include directories ────────────────────────────────────────────
 set(COMMON_INCLUDES
     ${ROOT_DIR}/bsw/mcal/mcu     # MCU driver (system_S32K344.h, mcu.h)
+    ${ROOT_DIR}/bsw/mcal/uart    # UART driver (Uart.h)
     ${ROOT_DIR}/lib              # syscalls.h, semihosting.h
     ${ROOT_DIR}/config           # Generated config headers (future)
 )
@@ -59,6 +60,11 @@ set(SYSCALL_SOURCES
     ${ROOT_DIR}/lib/syscalls.c
 )
 
+# ── MCAL UART driver (LPUART1 console) ─────────────────────────────
+set(UART_SOURCES
+    ${ROOT_DIR}/bsw/mcal/uart/Uart.c
+)
+
 # ── Semihosting (optional) ─────────────────────────────────────────
 set(SEMIHOSTING_SOURCES
     ${ROOT_DIR}/lib/semihosting.c
@@ -76,6 +82,7 @@ set(APP_SOURCES
 add_executable(${PROJECT_NAME}
     ${MCU_STARTUP_SOURCES}
     ${SYSCALL_SOURCES}
+    ${UART_SOURCES}
     ${APP_SOURCES}
 )
 

@@ -30,6 +30,7 @@ ems_s32k/
 │   │   ├── mcu/                  #     MCU 驱动
 │   │   ├── pwm/                  #     PWM 驱动
 │   │   ├── spi/                  #     SPI 驱动
+│   │   ├── uart/                 #     UART 驱动 (LPUART1 调试串口)
 │   │   └── wdg/                  #     WDG 看门狗驱动
 │   └── services/                 #   服务层
 │       ├── com/                  #     通信服务
@@ -91,6 +92,13 @@ Build outputs in `build/`: `ems_s32k.elf`, `.bin`, `.hex`, `.map`
 -DBUILD_TESTS=ON        # Build tests (future)
 ```
 
+### Serial console (LPUART1, core board)
+
+```bash
+# Functional test: 10 ms periodic TX, disable/enable commands (COM5, 115200)
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/test_serial.ps1
+```
+
 ### Debug (VS Code, verified working)
 
 - Press **F5** with "S32K344 Debug (J-Link)" configuration
@@ -135,6 +143,7 @@ Build outputs in `build/`: `ems_s32k.elf`, `.bin`, `.hex`, `.map`
 | eMIOS | Multiple channels | Injection timing, ignition timing, PWM outputs |
 | ADC | Multiple channels | MAP, TPS, APP, rail pressure, temperatures, current sense |
 | Debug UART | LPUART14 | Console output |
+| Debug UART (core board) | LPUART1 (PTC6=RX / PTC7=TX) | Console output (USB-UART on COM5, 115200 8N1) |
 
 ### Injection Control (Critical Path)
 
@@ -183,12 +192,13 @@ TLE7368E PMIC provides: VCC5V (MCU), VCC1.5V (VDD_HV), VCC1.1V (core). Two NCV31
 - [x] 2. CMake toolchain + linker script (`tools/CMakeLists.txt`, `tools/cmake/`, `tools/CMakePresets.json`, `config/S32K344_flash.ld`)
 - [x] 3. Embedded C library (`lib/syscalls.c`, `lib/semihosting.c`)
 - [x] 4. VS Code debug environment (`.vscode/launch.json`, `tasks.json`) — **verified working** with J-Link SWD
-- [ ] 5. Integrate NXP S32K3 RTD into `lib/` (RTD installed at `C:/NXP/S32DS.3.6.1/S32DS/software/PlatformSDK_S32K3/RTD/`)
-- [ ] 6. MCAL drivers: Dio → Spi → Adc → Gpt → Pwm → Can → Fls → Wdg
-- [ ] 7. HAL: IoHwAb, CanTp, NvM
-- [ ] 8. CDD: PT2000 injection driver (SPI-based, most complex)
-- [ ] 9. Services: OS, COM stack
-- [ ] 10. APP: vios → control → FaultManager
+- [x] 5. MCAL Uart driver (`bsw/mcal/uart/`) — LPUART1 console on PTC6(RX)/PTC7(TX), 115200 8N1, IRQ-driven RX ring buffer — **verified on hardware** (10 ms periodic TX of `g_counter_10ms`, `disable`/`enable` commands via `tools/test_serial.ps1`)
+- [ ] 6. Integrate NXP S32K3 RTD into `lib/` (RTD installed at `C:/NXP/S32DS.3.6.1/S32DS/software/PlatformSDK_S32K3/RTD/`)
+- [ ] 7. MCAL drivers: Dio → Spi → Adc → Gpt → Pwm → Can → Fls → Wdg
+- [ ] 8. HAL: IoHwAb, CanTp, NvM
+- [ ] 9. CDD: PT2000 injection driver (SPI-based, most complex)
+- [ ] 10. Services: OS, COM stack
+- [ ] 11. APP: vios → control → FaultManager
 
 ### Verified Hardware Details
 

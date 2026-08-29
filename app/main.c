@@ -5,13 +5,17 @@
  * This is the main entry point called by the startup code after
  * hardware initialization completes.
  *
- * Current status: minimal skeleton.  As APP modules are developed
- * (control, FaultManager, vios), their init functions will be
- * called from here.
+ * Current status: UART console demo — every 10 ms sends the value of
+ * g_counter_10ms to LPUART1 (PTC6 RX / PTC7 TX, 115200 8N1); the
+ * commands "disable"/"enable" stop/resume the stream.  As APP modules
+ * are developed (control, FaultManager, vios), their init functions
+ * will be called from here.
  */
 
 #include "mcu.h"
+#include "Uart.h"
 #include <stdio.h>
+#include <string.h>
 
 /* ── Cortex-M7 SysTick register definitions ── */
 #define SYST_CSR        (*(volatile uint32_t *)0xE000E010u)
@@ -25,6 +29,54 @@
 /* ── 10 ms tick counter ── */
 static volatile uint32_t g_counter_10ms;
 static volatile uint8_t  g_flag_10ms;
+
+/* ── UART console (LPUART1, PTC6 = RX / PTC7 = TX, 115200 8N1) ── */
+static Uart_ConfigType g_uartConfig = { .baudRate = 115200u };
+static bool            g_uartTxEnabled = true;   /* "disable"/"enable" commands */
+
+/* ── RX command line buffer ── */
+#define UART_CMD_LINE_MAX   16u
+static char    g_rxLine[UART_CMD_LINE_MAX];
+static uint8_t g_rxLineLen;
+static bool    g_rxLineOverflow;   /* line longer than buffer — ignore it */
+
+/**
+ * @brief  Feed one received byte into the command parser
+ *
+ * Commands are recognized strictly on a whole-line basis: when CR or
+ * LF arrives, the accumulated line must be EXACTLY "disable" or
+ * "enable" to take effect.  A line that merely contains these words
+ * (e.g. "disabled", "xxdisable") does nothing.
+ */
+static void Uart_ProcessRxByte(uint8_t ch)
+{
+    if ((ch == '\r') || (ch == '\n')) {
+        /* Line complete — the entire line must equal a command word */
+        if (!g_rxLineOverflow) {
+            if (strcmp(g_rxLine, "disable") == 0) {
+                g_uartTxEnabled = false;
+                Uart_WriteString("TX disabled\r\n");
+            } else if (strcmp(g_rxLine, "enable") == 0) {
+                g_uartTxEnabled = true;
+                Uart_WriteString("TX enabled\r\n");
+            }
+        }
+        g_rxLineLen = 0u;
+        g_rxLineOverflow = false;
+        g_rxLine[0] = '\0';
+        return;
+    }
+
+    if (g_rxLineOverflow) {
+        return;                         /* keep ignoring until line end */
+    }
+    if (g_rxLineLen >= (UART_CMD_LINE_MAX - 1u)) {
+        g_rxLineOverflow = true;        /* overlong line — ignore it */
+        return;
+    }
+    g_rxLine[g_rxLineLen++] = (char)ch;
+    g_rxLine[g_rxLineLen]   = '\0';
+}
 
 /**
  * @brief  SysTick interrupt handler — set 10 ms flag for main loop
@@ -52,6 +104,10 @@ int main(void)
     /* ── Variable storage space for startup verification ── */
     volatile uint32_t sys_clk = Mcu_GetCoreClockHz();
     (void)sys_clk;  /* Available for debugger inspection */
+
+    /* ── UART console: LPUART1 @ PTC6(RX)/PTC7(TX), 115200 8N1 ── */
+    Uart_Init(&g_uartConfig);
+    Uart_WriteString("EMS S32K UART console ready\r\n");
 
     /* ── Configure SysTick for 10 ms interval ──
      * Reload = (CORE_CLK / 100) - 1
@@ -81,7 +137,24 @@ int main(void)
         if (g_flag_10ms) {
             g_flag_10ms = 0u;
             g_counter_10ms++;
-            printf("tick: %lu\n", (unsigned long)g_counter_10ms);
+            if (g_uartTxEnabled) {
+                char line[32];
+                int  len = snprintf(line, sizeof(line),
+                                    "g_counter_10ms = %lu\r\n",
+                                    (unsigned long)g_counter_10ms);
+                for (int i = 0; i < len; i++) {
+                    Uart_WriteByte((uint8_t)line[i]);
+                }
+            }
+        }
+
+        /* ── UART receive: "disable" stops the 10 ms stream,
+         *    "enable" resumes it ── */
+        {
+            uint8_t ch;
+            while (Uart_ReadByte(&ch)) {
+                Uart_ProcessRxByte(ch);
+            }
         }
 
         /* Idle until the next interrupt (low-power).  The 10 ms
