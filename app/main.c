@@ -14,6 +14,8 @@
 
 #include "mcu.h"
 #include "Uart.h"
+#include "Dio.h"
+#include "Vios.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -33,6 +35,9 @@ static volatile uint8_t  g_flag_10ms;
 /* ── UART console (LPUART1, PTC6 = RX / PTC7 = TX, 115200 8N1) ── */
 static Uart_ConfigType g_uartConfig = { .baudRate = 115200u };
 static bool            g_uartTxEnabled = true;   /* "disable"/"enable" commands */
+
+/* ── Button/LED demo (SW1 on PTA7, LED3 on PTB14) ── */
+static uint32_t g_ledPeriodMs;   /* last LED blink period reported by Vios */
 
 /* ── RX command line buffer ── */
 #define UART_CMD_LINE_MAX   16u
@@ -109,6 +114,16 @@ int main(void)
     Uart_Init(&g_uartConfig);
     Uart_WriteString("EMS S32K UART console ready\r\n");
 
+    /* ── Button/LED demo: SW1 on PTA7, LED3 on PTB14 ── */
+    Vios_Init();
+    g_ledPeriodMs = VIOS_LED_PERIOD_500MS;
+    Uart_WriteString("Button/LED demo: LED blinks 500 ms; press SW1 (PTA7) to switch 500 ms <-> 2 s\r\n");
+    if (Dio_ReadChannel(DIO_CH_BUTTON_SW1) == STD_LOW) {
+        Uart_WriteString("BTN idle = LOW (OK)\r\n");
+    } else {
+        Uart_WriteString("BTN idle = HIGH (pressed? wiring check needed)\r\n");
+    }
+
     /* ── Configure SysTick for 10 ms interval ──
      * Reload = (CORE_CLK / 100) - 1
      * CORE_CLK is FIRC 48 MHz until MCU driver switches to PLL.
@@ -137,6 +152,22 @@ int main(void)
         if (g_flag_10ms) {
             g_flag_10ms = 0u;
             g_counter_10ms++;
+
+            /* ── Button debounce + LED blink task ── */
+            {
+                uint32_t period = Vios_Main10ms();
+                if (period != g_ledPeriodMs) {
+                    g_ledPeriodMs = period;
+                    char line[32];
+                    int  len = snprintf(line, sizeof(line),
+                                        "SW1 pressed -> LED blink %lu ms\r\n",
+                                        (unsigned long)period);
+                    for (int i = 0; i < len; i++) {
+                        Uart_WriteByte((uint8_t)line[i]);
+                    }
+                }
+            }
+
             if (g_uartTxEnabled) {
                 char line[32];
                 int  len = snprintf(line, sizeof(line),

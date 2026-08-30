@@ -1,0 +1,17 @@
+// J-Link Commander script: reset the target and let it run
+//
+// Used during serial tests to reboot the firmware so the boot
+// banner is captured by a listener already open on the UART.
+//
+// Usage (from project root):
+//   JLink.exe -device S32K344 -if SWD -speed 4000 -CommanderScript tools/reset.jlink
+
+device S32K344
+si SWD
+speed 4000
+
+connect
+r
+g
+
+qc

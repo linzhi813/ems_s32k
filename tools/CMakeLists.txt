@@ -32,6 +32,8 @@ cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH ROOT_DIR)
 set(COMMON_INCLUDES
     ${ROOT_DIR}/bsw/mcal/mcu     # MCU driver (system_S32K344.h, mcu.h)
     ${ROOT_DIR}/bsw/mcal/uart    # UART driver (Uart.h)
+    ${ROOT_DIR}/bsw/mcal/dio     # DIO driver (Dio.h)
+    ${ROOT_DIR}/app/vios         # VIOS app module (Vios.h)
     ${ROOT_DIR}/lib              # syscalls.h, semihosting.h
     ${ROOT_DIR}/config           # Generated config headers (future)
 )
@@ -65,6 +67,16 @@ set(UART_SOURCES
     ${ROOT_DIR}/bsw/mcal/uart/Uart.c
 )
 
+# ── MCAL DIO driver (SIUL2 GPIO) ───────────────────────────────────
+set(DIO_SOURCES
+    ${ROOT_DIR}/bsw/mcal/dio/Dio.c
+)
+
+# ── VIOS app module (button debounce + LED blink) ──────────────────
+set(VIOS_SOURCES
+    ${ROOT_DIR}/app/vios/Vios.c
+)
+
 # ── Semihosting (optional) ─────────────────────────────────────────
 set(SEMIHOSTING_SOURCES
     ${ROOT_DIR}/lib/semihosting.c
@@ -83,6 +95,8 @@ add_executable(${PROJECT_NAME}
     ${MCU_STARTUP_SOURCES}
     ${SYSCALL_SOURCES}
     ${UART_SOURCES}
+    ${DIO_SOURCES}
+    ${VIOS_SOURCES}
     ${APP_SOURCES}
 )
 

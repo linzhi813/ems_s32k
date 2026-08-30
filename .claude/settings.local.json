@@ -4,7 +4,11 @@
       "Read(//c/Program Files/SEGGER/JLink/**)",
       "Read(//c/Program Files \\\\\\(x86\\\\\\)/SEGGER/JLink/**)",
       "Bash(env)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(where pdftotext *)",
+      "Bash(py --version)",
+      "Bash(python -c \"import pypdf; print\\('pypdf ok'\\)\")",
+      "Bash(python -c \"import fitz; print\\('pymupdf ok'\\)\")"
     ]
   }
 }
