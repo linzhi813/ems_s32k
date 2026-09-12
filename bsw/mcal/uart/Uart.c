@@ -77,7 +77,9 @@
  * NVIC — LPUART1 = IRQ 142 (vector slot 158 = IRQ_142_Handler)
  * ═══════════════════════════════════════════════════════════════ */
 #define NVIC_ISER_BASE           0xE000E100u
+#define NVIC_IPR_BASE            0xE000E400u   /* byte array, one entry per IRQ */
 #define LPUART1_IRQN             142u
+#define LPUART1_IRQ_PRIORITY     0x40u         /* configMAX_SYSCALL_INTERRUPT_PRIORITY */
 
 /* ═══════════════════════════════════════════════════════════════
  * LPUART1 clock source (MC_CGM from mcu.h):
@@ -106,8 +108,12 @@ static uint32_t Uart_GetModuleClockHz(void)
 
 /* ═══════════════════════════════════════════════════════════════
  * RX ring buffer (filled by IRQ_142_Handler, drained by Uart_ReadByte)
+ *
+ * 256 bytes: the FreeRTOS console task drains the ring every 10 ms,
+ * during which ~115 bytes can arrive at 115200 baud — a 64-byte ring
+ * would overflow.
  * ═══════════════════════════════════════════════════════════════ */
-#define UART_RX_RING_SIZE        64u
+#define UART_RX_RING_SIZE        256u
 #define UART_RX_RING_MASK        (UART_RX_RING_SIZE - 1u)
 static volatile uint8_t  s_rxRing[UART_RX_RING_SIZE];
 static volatile uint32_t s_rxHead;      /* ISR writes here  */
@@ -183,6 +189,11 @@ void Uart_Init(const Uart_ConfigType *config)
     /* ── 6. Reset ring buffer, enable LPUART1 in NVIC, arm RX IRQ ── */
     s_rxHead = 0u;
     s_rxTail = 0u;
+    /* FreeRTOS: priority 0x40 = configMAX_SYSCALL_INTERRUPT_PRIORITY —
+     * maskable during kernel critical sections (BASEPRI).  The reset
+     * default of 0 would put the ISR above BASEPRI and it could never
+     * be masked.  IRQ_142_Handler calls no FromISR API, so 0x40 is safe. */
+    *(volatile uint8_t *)(NVIC_IPR_BASE + LPUART1_IRQN) = LPUART1_IRQ_PRIORITY;
     *(volatile uint32_t *)(NVIC_ISER_BASE + 4u * (LPUART1_IRQN / 32u)) =
         (1u << (LPUART1_IRQN % 32u));
     LPUART1_CTRL |= LPUART_CTRL_RIE;

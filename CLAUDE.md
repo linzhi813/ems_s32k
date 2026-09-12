@@ -95,8 +95,9 @@ Build outputs in `build/`: `ems_s32k.elf`, `.bin`, `.hex`, `.map`
 ### Serial console (LPUART1, core board)
 
 ```bash
-# Functional test: 10 ms periodic TX, disable/enable commands (COM5, 115200)
-powershell -NoProfile -ExecutionPolicy Bypass -File tools/test_serial.ps1
+# Functional test: 10 ms periodic TX, disable/enable commands (115200;
+# core-board USB-UART — scripts default to COM5, board currently on COM6)
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/test_serial.ps1 -Port COM6
 ```
 
 ### Debug (VS Code, verified working)
@@ -197,7 +198,7 @@ TLE7368E PMIC provides: VCC5V (MCU), VCC1.5V (VDD_HV), VCC1.1V (core). Two NCV31
 - [ ] 7. MCAL drivers: Dio → Spi → Adc → Gpt → Pwm → Can → Fls → Wdg
 - [ ] 8. HAL: IoHwAb, CanTp, NvM
 - [ ] 9. CDD: PT2000 injection driver (SPI-based, most complex)
-- [ ] 10. Services: OS, COM stack
+- [~] 10. Services: OS, COM stack — OS done: FreeRTOS V11.3.0 ported & hardware-verified (kernel in `bsw/services/os/FreeRTOS/`, config in `config/FreeRTOSConfig.h`, 1 ms SysTick tick, 10 ms UART task, 50 ms button/LED task); COM stack pending
 - [ ] 11. APP: vios → control → FaultManager
 
 ### Verified Hardware Details

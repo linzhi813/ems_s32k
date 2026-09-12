@@ -100,17 +100,6 @@ void Mcu_DelayUs(uint32_t us);
  */
 void Mcu_Reset(void) __attribute__((noreturn));
 
-/**
- * @brief  Wait for interrupt — low-power idle
- *
- * Executes WFI: the core sleeps until the next interrupt.
- * Use in the main idle loop instead of busy-wait polling.
- */
-static inline void Mcu_WaitForInterrupt(void)
-{
-    __asm__ volatile ("wfi");
-}
-
 #ifdef __cplusplus
 }
 #endif

@@ -3,13 +3,14 @@
  * @brief   Vehicle I/O System — button detection & LED indicator
  *
  * First VIOS modules on the core board:
- *   - Button SW1 (PTA7):  polled input with 60 ms debounce (≥ 50 ms
- *     requirement), one press event per complete press/release cycle
+ *   - Button SW1 (PTA7):  polled input with 100 ms debounce (2 × 50 ms,
+ *     ≥ 50 ms requirement), one press event per complete press/release
+ *     cycle
  *   - LED3 (PTB14):       blink indicator, period toggles between
  *     500 ms and 2 s on each confirmed button press
  *
- * Vios_Main10ms() must be called every 10 ms from the main loop
- * (driven by the SysTick 10 ms flag).
+ * Vios_Main50ms() must be called every 50 ms from the FreeRTOS
+ * button/LED task.
  */
 
 #ifndef VIOS_H
@@ -34,18 +35,18 @@ extern "C" {
 void Vios_Init(void);
 
 /**
- * @brief  Main 10 ms task — debounce button, blink LED
+ * @brief  Main 50 ms task — debounce button, blink LED
  *
  * - Samples the button and runs the debounce state machine
- *   (press and release edges both filtered, 6 × 10 ms = 60 ms).
- * - A confirmed press toggles the LED blink period 100 ms ↔ 1 s.
+ *   (press and release edges both filtered, 2 × 50 ms = 100 ms).
+ * - A confirmed press toggles the LED blink period 500 ms ↔ 2 s.
  * - Advances the LED blink timer; toggles the LED at each half
  *   period.
  *
- * @return  Current LED blink period in ms (100 or 1000), so the
+ * @return  Current LED blink period in ms (500 or 2000), so the
  *          caller can detect a mode change.
  */
-uint32_t Vios_Main10ms(void);
+uint32_t Vios_Main50ms(void);
 
 #ifdef __cplusplus
 }

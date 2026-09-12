@@ -9,13 +9,13 @@
  *     pad HIGH sources current → LED on (active-high).
  *
  * Timing:
- *   - Called every 10 ms from the SysTick-driven main loop.
- *   - Debounce: 6 consecutive equal samples = 60 ms (≥ 50 ms) on
+ *   - Called every 50 ms from the FreeRTOS button/LED task.
+ *   - Debounce: 2 consecutive equal samples = 100 ms (≥ 50 ms) on
  *     BOTH edges — press must be stable before the event fires, and
  *     the release must be stable before the next press is accepted.
  *     One press → one event, contact bounce cannot multi-trigger.
  *   - Blink: toggle LED at half period — 500 ms mode toggles every
- *     250 ms (25 ticks), 2 s mode every 1 s (100 ticks).
+ *     250 ms (5 ticks), 2 s mode every 1 s (20 ticks).
  */
 
 #include "Vios.h"
@@ -27,7 +27,7 @@
 #define LED_ON_LEVEL        STD_HIGH    /* pad sources current → on   */
 
 /* ── Debounce ── */
-#define BTN_DEBOUNCE_SAMPLES  6u       /* 6 × 10 ms = 60 ms ≥ 50 ms   */
+#define BTN_DEBOUNCE_SAMPLES  2u       /* 2 × 50 ms = 100 ms ≥ 50 ms  */
 
 /* ── Button debounce state machine ── */
 typedef enum
@@ -43,8 +43,8 @@ static uint8_t      s_btnSampleCnt;
 static bool         s_pressEvent;
 
 /* ── LED blink ── */
-static uint32_t s_ledPeriodMs;      /* 100 (power-up) or 1000        */
-static uint32_t s_ledBlinkTick;     /* 10 ms ticks since last toggle */
+static uint32_t s_ledPeriodMs;      /* 500 (power-up) or 2000        */
+static uint32_t s_ledBlinkTick;     /* 50 ms ticks since last toggle */
 static bool     s_ledOn;
 
 void Vios_Init(void)
@@ -61,7 +61,7 @@ void Vios_Init(void)
     Dio_WriteChannel(DIO_CH_LED1, LED_ON_LEVEL);
 }
 
-uint32_t Vios_Main10ms(void)
+uint32_t Vios_Main50ms(void)
 {
     bool pressed = (Dio_ReadChannel(DIO_CH_BUTTON_SW1) == BTN_PRESSED_LEVEL);
 
@@ -115,7 +115,7 @@ uint32_t Vios_Main10ms(void)
 
     /* ── LED blink: toggle at half period ── */
     s_ledBlinkTick++;
-    if (s_ledBlinkTick >= (s_ledPeriodMs / 20u)) {
+    if (s_ledBlinkTick >= (s_ledPeriodMs / 100u)) {
         s_ledBlinkTick = 0u;
         s_ledOn        = !s_ledOn;
         Dio_WriteChannel(DIO_CH_LED1, s_ledOn ? LED_ON_LEVEL : STD_LOW);

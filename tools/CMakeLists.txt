@@ -35,7 +35,9 @@ set(COMMON_INCLUDES
     ${ROOT_DIR}/bsw/mcal/dio     # DIO driver (Dio.h)
     ${ROOT_DIR}/app/vios         # VIOS app module (Vios.h)
     ${ROOT_DIR}/lib              # syscalls.h, semihosting.h
-    ${ROOT_DIR}/config           # Generated config headers (future)
+    ${ROOT_DIR}/config           # FreeRTOSConfig.h, linker script
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/include                    # FreeRTOS.h, task.h, ...
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/portable/GCC/ARM_CM7/r0p1  # portmacro.h
 )
 
 # ── Compiler definitions ───────────────────────────────────────────
@@ -77,6 +79,15 @@ set(VIOS_SOURCES
     ${ROOT_DIR}/app/vios/Vios.c
 )
 
+# ── FreeRTOS kernel V11.3.0 (services layer — OS, core files only) ─
+set(FREERTOS_SOURCES
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/tasks.c
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/queue.c
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/list.c
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/portable/GCC/ARM_CM7/r0p1/port.c
+    ${ROOT_DIR}/bsw/services/os/FreeRTOS/portable/MemMang/heap_4.c
+)
+
 # ── Semihosting (optional) ─────────────────────────────────────────
 set(SEMIHOSTING_SOURCES
     ${ROOT_DIR}/lib/semihosting.c
@@ -97,6 +108,7 @@ add_executable(${PROJECT_NAME}
     ${UART_SOURCES}
     ${DIO_SOURCES}
     ${VIOS_SOURCES}
+    ${FREERTOS_SOURCES}
     ${APP_SOURCES}
 )
 
